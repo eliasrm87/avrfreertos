@@ -1,0 +1,189 @@
+   1               		.file	"heap_3.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   9               		.text
+  10               	.Ltext0:
+  12               		.section	.text.hot,"ax",@progbits
+  15               	.global	pvPortMalloc
+  17               	pvPortMalloc:
+   1:../freeRTOS10xx/MemMang/heap_3.c **** /*
+   2:../freeRTOS10xx/MemMang/heap_3.c ****  * FreeRTOS Kernel V10.4.1
+   3:../freeRTOS10xx/MemMang/heap_3.c ****  * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+   4:../freeRTOS10xx/MemMang/heap_3.c ****  *
+   5:../freeRTOS10xx/MemMang/heap_3.c ****  * Permission is hereby granted, free of charge, to any person obtaining a copy of
+   6:../freeRTOS10xx/MemMang/heap_3.c ****  * this software and associated documentation files (the "Software"), to deal in
+   7:../freeRTOS10xx/MemMang/heap_3.c ****  * the Software without restriction, including without limitation the rights to
+   8:../freeRTOS10xx/MemMang/heap_3.c ****  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+   9:../freeRTOS10xx/MemMang/heap_3.c ****  * the Software, and to permit persons to whom the Software is furnished to do so,
+  10:../freeRTOS10xx/MemMang/heap_3.c ****  * subject to the following conditions:
+  11:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  12:../freeRTOS10xx/MemMang/heap_3.c ****  * The above copyright notice and this permission notice shall be included in all
+  13:../freeRTOS10xx/MemMang/heap_3.c ****  * copies or substantial portions of the Software.
+  14:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  15:../freeRTOS10xx/MemMang/heap_3.c ****  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  16:../freeRTOS10xx/MemMang/heap_3.c ****  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+  17:../freeRTOS10xx/MemMang/heap_3.c ****  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+  18:../freeRTOS10xx/MemMang/heap_3.c ****  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+  19:../freeRTOS10xx/MemMang/heap_3.c ****  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+  20:../freeRTOS10xx/MemMang/heap_3.c ****  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  21:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  22:../freeRTOS10xx/MemMang/heap_3.c ****  * https://www.FreeRTOS.org
+  23:../freeRTOS10xx/MemMang/heap_3.c ****  * https://github.com/FreeRTOS
+  24:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  25:../freeRTOS10xx/MemMang/heap_3.c ****  * 1 tab == 4 spaces!
+  26:../freeRTOS10xx/MemMang/heap_3.c ****  */
+  27:../freeRTOS10xx/MemMang/heap_3.c **** 
+  28:../freeRTOS10xx/MemMang/heap_3.c **** 
+  29:../freeRTOS10xx/MemMang/heap_3.c **** /*
+  30:../freeRTOS10xx/MemMang/heap_3.c ****  * Implementation of pvPortMalloc() and vPortFree() that relies on the
+  31:../freeRTOS10xx/MemMang/heap_3.c ****  * compilers own malloc() and free() implementations.
+  32:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  33:../freeRTOS10xx/MemMang/heap_3.c ****  * This file can only be used if the linker is configured to to generate
+  34:../freeRTOS10xx/MemMang/heap_3.c ****  * a heap memory area.
+  35:../freeRTOS10xx/MemMang/heap_3.c ****  *
+  36:../freeRTOS10xx/MemMang/heap_3.c ****  * See heap_1.c, heap_2.c and heap_4.c for alternative implementations, and the
+  37:../freeRTOS10xx/MemMang/heap_3.c ****  * memory management pages of https://www.FreeRTOS.org for more information.
+  38:../freeRTOS10xx/MemMang/heap_3.c ****  */
+  39:../freeRTOS10xx/MemMang/heap_3.c **** 
+  40:../freeRTOS10xx/MemMang/heap_3.c **** #include <stdlib.h>
+  41:../freeRTOS10xx/MemMang/heap_3.c **** 
+  42:../freeRTOS10xx/MemMang/heap_3.c **** /* Defining MPU_WRAPPERS_INCLUDED_FROM_API_FILE prevents task.h from redefining
+  43:../freeRTOS10xx/MemMang/heap_3.c ****  * all the API functions to use the MPU wrappers.  That should only be done when
+  44:../freeRTOS10xx/MemMang/heap_3.c ****  * task.h is included from an application file. */
+  45:../freeRTOS10xx/MemMang/heap_3.c **** #define MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+  46:../freeRTOS10xx/MemMang/heap_3.c **** 
+  47:../freeRTOS10xx/MemMang/heap_3.c **** #include "FreeRTOS.h"
+  48:../freeRTOS10xx/MemMang/heap_3.c **** #include "task.h"
+  49:../freeRTOS10xx/MemMang/heap_3.c **** 
+  50:../freeRTOS10xx/MemMang/heap_3.c **** #undef MPU_WRAPPERS_INCLUDED_FROM_API_FILE
+  51:../freeRTOS10xx/MemMang/heap_3.c **** 
+  52:../freeRTOS10xx/MemMang/heap_3.c **** #if( configSUPPORT_DYNAMIC_ALLOCATION > 0 )
+  53:../freeRTOS10xx/MemMang/heap_3.c **** 
+  54:../freeRTOS10xx/MemMang/heap_3.c **** /*-----------------------------------------------------------*/
+  55:../freeRTOS10xx/MemMang/heap_3.c **** 
+  56:../freeRTOS10xx/MemMang/heap_3.c **** void * pvPortMalloc( size_t xWantedSize )
+  57:../freeRTOS10xx/MemMang/heap_3.c **** {
+  19               	.LM0:
+  20               	.LFBB1:
+  21 0000 CF93      		push r28
+  22 0002 DF93      		push r29
+  23               	/* prologue: function */
+  24               	/* frame size = 0 */
+  25               	/* stack size = 2 */
+  26               	.L__stack_usage = 2
+  27 0004 D82F      		mov r29,r24
+  28 0006 C92F      		mov r28,r25
+  58:../freeRTOS10xx/MemMang/heap_3.c ****     void * pvReturn;
+  59:../freeRTOS10xx/MemMang/heap_3.c **** 
+  60:../freeRTOS10xx/MemMang/heap_3.c ****     vTaskSuspendAll();
+  30               	.LM1:
+  31 0008 0E94 0000 		call vTaskSuspendAll
+  61:../freeRTOS10xx/MemMang/heap_3.c ****     {
+  62:../freeRTOS10xx/MemMang/heap_3.c ****         pvReturn = malloc( xWantedSize );
+  33               	.LM2:
+  34 000c 8D2F      		mov r24,r29
+  35 000e 9C2F      		mov r25,r28
+  36 0010 0E94 0000 		call malloc
+  37 0014 EC01      		movw r28,r24
+  63:../freeRTOS10xx/MemMang/heap_3.c ****         traceMALLOC( pvReturn, xWantedSize );
+  64:../freeRTOS10xx/MemMang/heap_3.c ****     }
+  65:../freeRTOS10xx/MemMang/heap_3.c ****     ( void ) xTaskResumeAll();
+  39               	.LM3:
+  40 0016 0E94 0000 		call xTaskResumeAll
+  66:../freeRTOS10xx/MemMang/heap_3.c **** 
+  67:../freeRTOS10xx/MemMang/heap_3.c ****     #if ( configUSE_MALLOC_FAILED_HOOK == 1 )
+  68:../freeRTOS10xx/MemMang/heap_3.c ****         {
+  69:../freeRTOS10xx/MemMang/heap_3.c ****             if( pvReturn == NULL )
+  42               	.LM4:
+  43 001a 2097      		sbiw r28,0
+  44 001c 01F4      		brne .L1
+  45               	.LBB2:
+  70:../freeRTOS10xx/MemMang/heap_3.c ****             {
+  71:../freeRTOS10xx/MemMang/heap_3.c ****                 extern void vApplicationMallocFailedHook( void );
+  72:../freeRTOS10xx/MemMang/heap_3.c ****                 vApplicationMallocFailedHook();
+  47               	.LM5:
+  48 001e 0E94 0000 		call vApplicationMallocFailedHook
+  49               	.L1:
+  50               	.LBE2:
+  73:../freeRTOS10xx/MemMang/heap_3.c ****             }
+  74:../freeRTOS10xx/MemMang/heap_3.c ****         }
+  75:../freeRTOS10xx/MemMang/heap_3.c ****     #endif
+  76:../freeRTOS10xx/MemMang/heap_3.c **** 
+  77:../freeRTOS10xx/MemMang/heap_3.c ****     return pvReturn;
+  78:../freeRTOS10xx/MemMang/heap_3.c **** }
+  52               	.LM6:
+  53 0022 CE01      		movw r24,r28
+  54               	/* epilogue start */
+  55 0024 DF91      		pop r29
+  56 0026 CF91      		pop r28
+  57 0028 0895      		ret
+  62               	.Lscope1:
+  66               	.global	vPortFree
+  68               	vPortFree:
+  79:../freeRTOS10xx/MemMang/heap_3.c **** /*-----------------------------------------------------------*/
+  80:../freeRTOS10xx/MemMang/heap_3.c **** 
+  81:../freeRTOS10xx/MemMang/heap_3.c **** void vPortFree( void * pv )
+  82:../freeRTOS10xx/MemMang/heap_3.c **** {
+  70               	.LM7:
+  71               	.LFBB2:
+  72 002a CF93      		push r28
+  73 002c DF93      		push r29
+  74               	/* prologue: function */
+  75               	/* frame size = 0 */
+  76               	/* stack size = 2 */
+  77               	.L__stack_usage = 2
+  78 002e EC01      		movw r28,r24
+  83:../freeRTOS10xx/MemMang/heap_3.c ****     if( pv )
+  80               	.LM8:
+  81 0030 892B      		or r24,r25
+  82 0032 01F0      		breq .L3
+  84:../freeRTOS10xx/MemMang/heap_3.c ****     {
+  85:../freeRTOS10xx/MemMang/heap_3.c ****         vTaskSuspendAll();
+  84               	.LM9:
+  85 0034 0E94 0000 		call vTaskSuspendAll
+  86:../freeRTOS10xx/MemMang/heap_3.c ****         {
+  87:../freeRTOS10xx/MemMang/heap_3.c ****             free( pv );
+  87               	.LM10:
+  88 0038 CE01      		movw r24,r28
+  89 003a 0E94 0000 		call free
+  90               	/* epilogue start */
+  88:../freeRTOS10xx/MemMang/heap_3.c ****             traceFREE( pv, 0 );
+  89:../freeRTOS10xx/MemMang/heap_3.c ****         }
+  90:../freeRTOS10xx/MemMang/heap_3.c ****         ( void ) xTaskResumeAll();
+  91:../freeRTOS10xx/MemMang/heap_3.c ****     }
+  92:../freeRTOS10xx/MemMang/heap_3.c **** }
+  92               	.LM11:
+  93 003e DF91      		pop r29
+  94 0040 CF91      		pop r28
+  90:../freeRTOS10xx/MemMang/heap_3.c ****     }
+  96               	.LM12:
+  97 0042 0C94 0000 		jmp xTaskResumeAll
+  98               	.L3:
+  99               	/* epilogue start */
+ 101               	.LM13:
+ 102 0046 DF91      		pop r29
+ 103 0048 CF91      		pop r28
+ 104 004a 0895      		ret
+ 106               	.Lscope2:
+ 108               		.text
+ 110               	.Letext0:
+ 111               		.ident	"GCC: (GNU) 10.2.0"
+DEFINED SYMBOLS
+                            *ABS*:0000000000000000 heap_3.c
+     /tmp/ccAiWwhY.s:2      *ABS*:000000000000003e __SP_H__
+     /tmp/ccAiWwhY.s:3      *ABS*:000000000000003d __SP_L__
+     /tmp/ccAiWwhY.s:4      *ABS*:000000000000003f __SREG__
+     /tmp/ccAiWwhY.s:5      *ABS*:0000000000000000 __tmp_reg__
+     /tmp/ccAiWwhY.s:6      *ABS*:0000000000000001 __zero_reg__
+     /tmp/ccAiWwhY.s:17     .text.hot:0000000000000000 pvPortMalloc
+     /tmp/ccAiWwhY.s:68     .text.hot:000000000000002a vPortFree
+
+UNDEFINED SYMBOLS
+vTaskSuspendAll
+malloc
+xTaskResumeAll
+vApplicationMallocFailedHook
+free
