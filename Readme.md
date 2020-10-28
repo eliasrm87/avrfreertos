@@ -1,8 +1,6 @@
 # FreeRTOS demo for Atmega328P ready to go
 
-This repository is the result copy and paste from **feilipu/avrfreertos** (86d62d5eab131ca17c44df709f1f3dc4c0dbda34) and the official FreeRTOS source. I take absolutly no credit.
-
-This is just a convenience starting point to allow quick and easy use of FreeRTOS on an Arduino Uno board. If you are looking to make a serious project, I strongly recommend you to refer to  feilipu/avrfreertos and the official FreeRTOS documentation and source.
+This is a convenience starting point to allow quick and easy use of FreeRTOS on an Arduino Uno board. If you are looking to make a serious project, I strongly recommend you to refer to feilipu/avrfreertos and the official FreeRTOS documentation and source.
 
 # Building
 
