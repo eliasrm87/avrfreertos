@@ -158,6 +158,10 @@
     #define INCLUDE_uxTaskGetStackHighWaterMark    0
 #endif
 
+#ifndef INCLUDE_uxTaskGetStackHighWaterMark2
+    #define INCLUDE_uxTaskGetStackHighWaterMark2    0
+#endif
+
 #ifndef INCLUDE_eTaskGetState
     #define INCLUDE_eTaskGetState    0
 #endif
@@ -927,9 +931,9 @@
 
 /* Definitions to allow backward compatibility with FreeRTOS versions prior to
  * V8 if desired. */
-//#ifndef configENABLE_BACKWARD_COMPATIBILITY
-//    #define configENABLE_BACKWARD_COMPATIBILITY    1
-//#endif
+#ifndef configENABLE_BACKWARD_COMPATIBILITY
+    #define configENABLE_BACKWARD_COMPATIBILITY    1
+#endif
 
 #ifndef configPRINTF
 

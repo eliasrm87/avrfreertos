@@ -69,7 +69,7 @@
     #define tmrSTATUS_IS_AUTORELOAD              ( ( uint8_t ) 0x04 )
 
 /* The definition of the timers themselves. */
-    typedef struct TimerDef_t
+    typedef struct tmrTimerControl                  /* The old naming convention is used to prevent breaking kernel aware debuggers. */
     {
         const char * pcTimerName;                   /*<< Text name.  This is not used by the kernel, it is included simply to make debugging easier. */ /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
         ListItem_t xTimerListItem;                  /*<< Standard linked list item as used by all kernel features for event management. */
@@ -80,7 +80,11 @@
             UBaseType_t uxTimerNumber;              /*<< An ID assigned by trace tools such as FreeRTOS+Trace */
         #endif
         uint8_t ucStatus;                           /*<< Holds bits to say if the timer was statically allocated or not, and if it is active or not. */
-    } Timer_t;
+    } xTIMER;
+
+/* The old xTIMER name is maintained above then typedefed to the new Timer_t
+ * name below to enable the use of older kernel aware debuggers. */
+    typedef xTIMER Timer_t;
 
 /* The definition of messages that can be sent and received on the timer queue.
  * Two types of message can be queued - messages that manipulate a software timer,
@@ -230,7 +234,7 @@
                 {
                     StaticTask_t * pxTimerTaskTCBBuffer = NULL;
                     StackType_t * pxTimerTaskStackBuffer = NULL;
-                    configSTACK_DEPTH_TYPE ulTimerTaskStackSize;
+                    uint32_t ulTimerTaskStackSize;
 
                     vApplicationGetTimerTaskMemory( &pxTimerTaskTCBBuffer, &pxTimerTaskStackBuffer, &ulTimerTaskStackSize );
                     xTimerTaskHandle = xTaskCreateStatic( prvTimerTask,

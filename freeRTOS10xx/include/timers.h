@@ -74,8 +74,8 @@
  * reference the subject timer in calls to other software timer API functions
  * (for example, xTimerStart(), xTimerReset(), etc.).
  */
-struct TimerDef_t;
-typedef struct TimerDef_t * TimerHandle_t;
+struct tmrTimerControl; /* The old naming convention is used to prevent breaking kernel aware debuggers. */
+typedef struct tmrTimerControl * TimerHandle_t;
 
 /*
  * Defines the prototype to which timer callback functions must conform.
@@ -1328,7 +1328,7 @@ BaseType_t xTimerGenericCommand( TimerHandle_t xTimer,
 
     /**
      * task.h
-     * <pre>void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer, StackType_t ** ppxTimerTaskStackBuffer, configSTACK_DEPTH_TYPE * pulTimerTaskStackSize ) </pre>
+     * <pre>void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer, StackType_t ** ppxTimerTaskStackBuffer, uint32_t *pulTimerTaskStackSize ) </pre>
      * 
      * This function is used to provide a statically allocated block of memory to FreeRTOS to hold the Timer Task TCB.  This function is required when 
      * configSUPPORT_STATIC_ALLOCATION is set.  For more information see this URI: https://www.FreeRTOS.org/a00110.html#configSUPPORT_STATIC_ALLOCATION
@@ -1339,7 +1339,7 @@ BaseType_t xTimerGenericCommand( TimerHandle_t xTimer,
      */
     void vApplicationGetTimerTaskMemory( StaticTask_t ** ppxTimerTaskTCBBuffer,
                                           StackType_t ** ppxTimerTaskStackBuffer,
-                                          configSTACK_DEPTH_TYPE * pulTimerTaskStackSize );
+                                              uint32_t * pulTimerTaskStackSize );
 
 #endif
 

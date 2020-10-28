@@ -84,7 +84,7 @@
 /* If any of the following are set then task stacks are filled with a known
  * value so the high water mark can be determined.  If none of the following are
  * set then don't fill the stack so there is no unnecessary dependency on memset. */
-#if ( ( configCHECK_FOR_STACK_OVERFLOW > 1 ) || ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) )
+#if ( ( configCHECK_FOR_STACK_OVERFLOW > 1 ) || ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark2 == 1 ) )
     #define tskSET_NEW_STACKS_TO_KNOWN_VALUE    1
 #else
     #define tskSET_NEW_STACKS_TO_KNOWN_VALUE    0
@@ -229,7 +229,7 @@
  * task should be used in place of the parameter.  This macro simply checks to
  * see if the parameter is NULL and returns a pointer to the appropriate TCB.
  */
-#define prvGetTCBFromHandle( pxHandle )    ( ( ( pxHandle ) == NULL ) ? pxCurrentTCB : ( TCB_t * ) ( pxHandle ) )
+#define prvGetTCBFromHandle( pxHandle )    ( ( ( pxHandle ) == NULL ) ? pxCurrentTCB : ( pxHandle ) )
 
 /* The item value of the event list item is normally used to hold the priority
  * of the task to which it belongs (coded to allow it to be held in reverse
@@ -291,7 +291,7 @@ typedef struct tskTaskControlBlock       /* The old naming convention is used to
     #endif
 
     #if ( configGENERATE_RUN_TIME_STATS == 1 )
-        TickType_t ulRunTimeCounter; /*< Stores the amount of time the task has spent in the Running state. */
+        uint32_t ulRunTimeCounter; /*< Stores the amount of time the task has spent in the Running state. */
     #endif
 
     #if ( configUSE_NEWLIB_REENTRANT == 1 )
@@ -327,11 +327,15 @@ typedef struct tskTaskControlBlock       /* The old naming convention is used to
     #if ( configUSE_POSIX_ERRNO == 1 )
         int iTaskErrno;
     #endif
-} TCB_t;
+} tskTCB;
+
+/* The old tskTCB name is maintained above then typedefed to the new TCB_t name
+ * below to enable the use of older kernel aware debuggers. */
+typedef tskTCB TCB_t;
 
 /*lint -save -e956 A manual analysis and inspection has been used to determine
-which static variables must be declared volatile. */
-PRIVILEGED_DATA TCB_t * volatile pxCurrentTCB __attribute__((used)) = NULL;
+ * which static variables must be declared volatile. */
+PRIVILEGED_DATA TCB_t * volatile pxCurrentTCB = NULL;
 
 /* Lists for ready and blocked tasks. --------------------
  * xDelayedTaskList1 and xDelayedTaskList2 could be move to function scople but
@@ -389,8 +393,8 @@ PRIVILEGED_DATA static volatile UBaseType_t uxSchedulerSuspended = ( UBaseType_t
 
 /* Do not move these variables to function scope as doing so prevents the
  * code working with debuggers that need to remove the static qualifier. */
-    PRIVILEGED_DATA static TickType_t ulTaskSwitchedInTime = 0UL;    /*< Holds the value of a timer/counter the last time a task was switched in. */
-    PRIVILEGED_DATA static volatile TickType_t ulTotalRunTime = 0UL; /*< Holds the total amount of execution time as defined by the run time counter clock. */
+    PRIVILEGED_DATA static uint32_t ulTaskSwitchedInTime = 0UL;    /*< Holds the value of a timer/counter the last time a task was switched in. */
+    PRIVILEGED_DATA static volatile uint32_t ulTotalRunTime = 0UL; /*< Holds the total amount of execution time as defined by the run time counter clock. */
 
 #endif
 
@@ -533,7 +537,7 @@ static void prvResetNextTaskUnblockTime( void ) PRIVILEGED_FUNCTION;
  */
 static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
                                   const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
-                                  const configSTACK_DEPTH_TYPE ulStackDepth,
+                                  const uint32_t ulStackDepth,
                                   void * const pvParameters,
                                   UBaseType_t uxPriority,
                                   TaskHandle_t * const pxCreatedTask,
@@ -563,7 +567,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
 
     TaskHandle_t xTaskCreateStatic( TaskFunction_t pxTaskCode,
                                     const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
-                                    const configSTACK_DEPTH_TYPE ulStackDepth,
+                                    const uint32_t ulStackDepth,
                                     void * const pvParameters,
                                     UBaseType_t uxPriority,
                                     StackType_t * const puxStackBuffer,
@@ -646,7 +650,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
 
             prvInitialiseNewTask( pxTaskDefinition->pvTaskCode,
                                   pxTaskDefinition->pcName,
-                                  ( configSTACK_DEPTH_TYPE ) pxTaskDefinition->usStackDepth,
+                                  ( uint32_t ) pxTaskDefinition->usStackDepth,
                                   pxTaskDefinition->pvParameters,
                                   pxTaskDefinition->uxPriority,
                                   pxCreatedTask, pxNewTCB,
@@ -695,7 +699,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
 
                 prvInitialiseNewTask( pxTaskDefinition->pvTaskCode,
                                       pxTaskDefinition->pcName,
-                                      ( configSTACK_DEPTH_TYPE ) pxTaskDefinition->usStackDepth,
+                                      ( uint32_t ) pxTaskDefinition->usStackDepth,
                                       pxTaskDefinition->pvParameters,
                                       pxTaskDefinition->uxPriority,
                                       pxCreatedTask, pxNewTCB,
@@ -754,7 +758,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
                 StackType_t * pxStack;
 
                 /* Allocate space for the stack used by the task being created. */
-                pxStack = ( StackType_t * ) pvPortMalloc( ( ( ( size_t ) usStackDepth ) * sizeof( StackType_t ) ) ); /*lint !e9079 All values returned by pvPortMalloc() have at least the alignment required by the MCU's stack and this allocation is the stack. */
+                pxStack = pvPortMalloc( ( ( ( size_t ) usStackDepth ) * sizeof( StackType_t ) ) ); /*lint !e9079 All values returned by pvPortMalloc() have at least the alignment required by the MCU's stack and this allocation is the stack. */
 
                 if( pxStack != NULL )
                 {
@@ -790,7 +794,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
                 }
             #endif /* tskSTATIC_AND_DYNAMIC_ALLOCATION_POSSIBLE */
 
-            prvInitialiseNewTask( pxTaskCode, pcName, ( configSTACK_DEPTH_TYPE ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
+            prvInitialiseNewTask( pxTaskCode, pcName, ( uint32_t ) usStackDepth, pvParameters, uxPriority, pxCreatedTask, pxNewTCB, NULL );
             prvAddNewTaskToReadyList( pxNewTCB );
             xReturn = pdPASS;
         }
@@ -807,7 +811,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB ) PRIVILEGED_FUNCTION;
 
 static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
                                   const char * const pcName, /*lint !e971 Unqualified char types are allowed for strings and single characters only. */
-                                  const configSTACK_DEPTH_TYPE ulStackDepth,
+                                  const uint32_t ulStackDepth,
                                   void * const pvParameters,
                                   UBaseType_t uxPriority,
                                   TaskHandle_t * const pxCreatedTask,
@@ -846,7 +850,7 @@ static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
      * by the port. */
     #if ( portSTACK_GROWTH < 0 )
         {
-            pxTopOfStack = &( pxNewTCB->pxStack[ ulStackDepth - ( configSTACK_DEPTH_TYPE ) 1 ] );
+            pxTopOfStack = &( pxNewTCB->pxStack[ ulStackDepth - ( uint32_t ) 1 ] );
             pxTopOfStack = ( StackType_t * ) ( ( ( portPOINTER_SIZE_TYPE ) pxTopOfStack ) & ( ~( ( portPOINTER_SIZE_TYPE ) portBYTE_ALIGNMENT_MASK ) ) ); /*lint !e923 !e9033 !e9078 MISRA exception.  Avoiding casts between pointers and integers is not practical.  Size differences accounted for using portPOINTER_SIZE_TYPE type.  Checked by assert(). */
 
             /* Check the alignment of the calculated top of stack is correct. */
@@ -869,7 +873,7 @@ static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
 
             /* The other extreme of the stack space is required if stack checking is
              * performed. */
-            pxNewTCB->pxEndOfStack = pxNewTCB->pxStack + ( ulStackDepth - ( configSTACK_DEPTH_TYPE ) 1 );
+            pxNewTCB->pxEndOfStack = pxNewTCB->pxStack + ( ulStackDepth - ( uint32_t ) 1 );
         }
     #endif /* portSTACK_GROWTH */
 
@@ -1801,7 +1805,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
     static BaseType_t prvTaskIsTaskSuspended( const TaskHandle_t xTask )
     {
         BaseType_t xReturn = pdFALSE;
-        const TCB_t * const pxTCB = ( TCB_t * ) xTask;
+        const TCB_t * const pxTCB = xTask;
 
         /* Accesses xPendingReadyList so must be called from a critical
          * section. */
@@ -1846,7 +1850,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
 
     void vTaskResume( TaskHandle_t xTaskToResume )
     {
-        TCB_t * const pxTCB = ( TCB_t * ) xTaskToResume;
+        TCB_t * const pxTCB = xTaskToResume;
 
         /* It does not make sense to resume the calling task. */
         configASSERT( xTaskToResume );
@@ -1857,7 +1861,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
         {
             taskENTER_CRITICAL();
             {
-                if( prvTaskIsTaskSuspended( ( TaskHandle_t ) pxTCB ) != pdFALSE )
+                if( prvTaskIsTaskSuspended( pxTCB ) != pdFALSE )
                 {
                     traceTASK_RESUME( pxTCB );
 
@@ -1901,7 +1905,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
     BaseType_t xTaskResumeFromISR( TaskHandle_t xTaskToResume )
     {
         BaseType_t xYieldRequired = pdFALSE;
-        TCB_t * const pxTCB = ( TCB_t * ) xTaskToResume;
+        TCB_t * const pxTCB = xTaskToResume;
         UBaseType_t uxSavedInterruptStatus;
 
         configASSERT( xTaskToResume );
@@ -1926,7 +1930,7 @@ static void prvAddNewTaskToReadyList( TCB_t * pxNewTCB )
 
         uxSavedInterruptStatus = portSET_INTERRUPT_MASK_FROM_ISR();
         {
-            if( prvTaskIsTaskSuspended( ( TaskHandle_t ) pxTCB ) != pdFALSE )
+            if( prvTaskIsTaskSuspended( pxTCB ) != pdFALSE )
             {
                 traceTASK_RESUME_FROM_ISR( pxTCB );
 
@@ -1977,7 +1981,7 @@ void vTaskStartScheduler( void )
         {
             StaticTask_t * pxIdleTaskTCBBuffer = NULL;
             StackType_t * pxIdleTaskStackBuffer = NULL;
-            configSTACK_DEPTH_TYPE ulIdleTaskStackSize;
+            uint32_t ulIdleTaskStackSize;
 
             /* The Idle task is created using user provided RAM - obtain the
              * address of the RAM then create the idle task. */
@@ -2100,7 +2104,6 @@ void vTaskEndScheduler( void )
     portDISABLE_INTERRUPTS();
     xSchedulerRunning = pdFALSE;
     vPortEndScheduler();
-    portENABLE_INTERRUPTS(); /* As per comment, enable interrupts. */
 }
 /*----------------------------------------------------------*/
 
@@ -2109,7 +2112,7 @@ void vTaskSuspendAll( void )
     /* A critical section is not required as the variable is of type
      * BaseType_t.  Please read Richard Barry's reply in the following link to a
      * post in the FreeRTOS support forum before reporting this as a bug! -
-     * https://goo.gl/wu4acr */
+     * http://goo.gl/wu4acr */
 
     /* portSOFRWARE_BARRIER() is only implemented for emulated/simulated ports that
      * do not otherwise exhibit real time behaviour. */
@@ -2502,7 +2505,7 @@ char * pcTaskGetName( TaskHandle_t xTaskToQuery ) /*lint !e971 Unqualified char 
 
     UBaseType_t uxTaskGetSystemState( TaskStatus_t * const pxTaskStatusArray,
                                       const UBaseType_t uxArraySize,
-                                      TickType_t * const pulTotalRunTime )
+                                      uint32_t * const pulTotalRunTime )
     {
         UBaseType_t uxTask = 0, uxQueue = configMAX_PRIORITIES;
 
@@ -3820,7 +3823,7 @@ static void prvCheckTasksWaitingTermination( void )
 #endif /* configUSE_TRACE_FACILITY */
 /*-----------------------------------------------------------*/
 
-#if ( ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) )
+#if ( ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark2 == 1 ) )
 
     static configSTACK_DEPTH_TYPE prvTaskCheckFreeStackSpace( const uint8_t * pucStackByte )
     {
@@ -3837,30 +3840,56 @@ static void prvCheckTasksWaitingTermination( void )
         return ( configSTACK_DEPTH_TYPE ) ulCount;
     }
 
-#endif /* ( ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) ) */
+#endif /* ( ( configUSE_TRACE_FACILITY == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark == 1 ) || ( INCLUDE_uxTaskGetStackHighWaterMark2 == 1 ) ) */
+/*-----------------------------------------------------------*/
+
+#if ( INCLUDE_uxTaskGetStackHighWaterMark2 == 1 )
+
+/* uxTaskGetStackHighWaterMark() and uxTaskGetStackHighWaterMark2() are the
+ * same except for their return type.  Using configSTACK_DEPTH_TYPE allows the
+ * user to determine the return type.  It gets around the problem of the value
+ * overflowing on 8-bit types without breaking backward compatibility for
+ * applications that expect an 8-bit return type. */
+    configSTACK_DEPTH_TYPE uxTaskGetStackHighWaterMark2( TaskHandle_t xTask )
+    {
+        TCB_t * pxTCB;
+        uint8_t * pucEndOfStack;
+        configSTACK_DEPTH_TYPE uxReturn;
+
+        /* uxTaskGetStackHighWaterMark() and uxTaskGetStackHighWaterMark2() are
+         * the same except for their return type.  Using configSTACK_DEPTH_TYPE
+         * allows the user to determine the return type.  It gets around the
+         * problem of the value overflowing on 8-bit types without breaking
+         * backward compatibility for applications that expect an 8-bit return
+         * type. */
+
+        pxTCB = prvGetTCBFromHandle( xTask );
+
+        #if portSTACK_GROWTH < 0
+            {
+                pucEndOfStack = ( uint8_t * ) pxTCB->pxStack;
+            }
+        #else
+            {
+                pucEndOfStack = ( uint8_t * ) pxTCB->pxEndOfStack;
+            }
+        #endif
+
+        uxReturn = prvTaskCheckFreeStackSpace( pucEndOfStack );
+
+        return uxReturn;
+    }
+
+#endif /* INCLUDE_uxTaskGetStackHighWaterMark2 */
 /*-----------------------------------------------------------*/
 
 #if ( INCLUDE_uxTaskGetStackHighWaterMark == 1 )
-
-    /* uxTaskGetStackHighWaterMark() under configENABLE_BACKWARD_COMPATIBILITY
-     * differs only in its return type.  Using configSTACK_DEPTH_TYPE allows the
-     * user to determine the return type.  It gets around the problem of the value
-     * overflowing on 8-bit types without breaking backward compatibility for
-     * applications that expect an 8-bit return type. */
-
-#if configENABLE_BACKWARD_COMPATIBILITY == 1
 
     UBaseType_t uxTaskGetStackHighWaterMark( TaskHandle_t xTask )
     {
         TCB_t * pxTCB;
         uint8_t * pucEndOfStack;
         UBaseType_t uxReturn;
-
-        /* uxTaskGetStackHighWaterMark() under configENABLE_BACKWARD_COMPATIBILITY
-         * differs only in its return type.  Using configSTACK_DEPTH_TYPE allows the
-         * user to determine the return type.  It gets around the problem of the value
-         * overflowing on 8-bit types without breaking backward compatibility for
-         * applications that expect an 8-bit return type. */
 
         pxTCB = prvGetTCBFromHandle( xTask );
 
@@ -3878,33 +3907,6 @@ static void prvCheckTasksWaitingTermination( void )
 
         return uxReturn;
     }
-
-#else /* onfigENABLE_BACKWARD_COMPATIBILITY == 0 */
-
-    configSTACK_DEPTH_TYPE uxTaskGetStackHighWaterMark( TaskHandle_t xTask )
-    {
-        TCB_t * pxTCB;
-        uint8_t * pucEndOfStack;
-        configSTACK_DEPTH_TYPE uxReturn;
-
-        pxTCB = prvGetTCBFromHandle( xTask );
-
-        #if portSTACK_GROWTH < 0
-            {
-                pucEndOfStack = ( uint8_t * ) pxTCB->pxStack;
-            }
-        #else
-            {
-                pucEndOfStack = ( uint8_t * ) pxTCB->pxEndOfStack;
-            }
-        #endif
-
-        uxReturn = ( configSTACK_DEPTH_TYPE) prvTaskCheckFreeStackSpace( pucEndOfStack );
-
-        return uxReturn;
-    }
-
-#endif /* configENABLE_BACKWARD_COMPATIBILITY */
 
 #endif /* INCLUDE_uxTaskGetStackHighWaterMark */
 /*-----------------------------------------------------------*/
@@ -3997,7 +3999,7 @@ static void prvResetNextTaskUnblockTime( void )
         /* A critical section is not required as this is not called from
          * an interrupt and the current TCB will always be the same for any
          * individual execution thread. */
-        xReturn = ( TaskHandle_t ) pxCurrentTCB;
+        xReturn = pxCurrentTCB;
 
         return xReturn;
     }
@@ -4037,7 +4039,7 @@ static void prvResetNextTaskUnblockTime( void )
 
     BaseType_t xTaskPriorityInherit( TaskHandle_t const pxMutexHolder )
     {
-        TCB_t * const pxMutexHolderTCB = ( TCB_t * ) pxMutexHolder;
+        TCB_t * const pxMutexHolderTCB = pxMutexHolder;
         BaseType_t xReturn = pdFALSE;
 
         /* If the mutex was given back by an interrupt while the queue was
@@ -4127,7 +4129,7 @@ static void prvResetNextTaskUnblockTime( void )
 
     BaseType_t xTaskPriorityDisinherit( TaskHandle_t const pxMutexHolder )
     {
-        TCB_t * const pxTCB = ( TCB_t * ) pxMutexHolder;
+        TCB_t * const pxTCB = pxMutexHolder;
         BaseType_t xReturn = pdFALSE;
 
         if( pxMutexHolder != NULL )
@@ -4208,7 +4210,7 @@ static void prvResetNextTaskUnblockTime( void )
     void vTaskPriorityDisinheritAfterTimeout( TaskHandle_t const pxMutexHolder,
                                               UBaseType_t uxHighestPriorityWaitingTask )
     {
-        TCB_t * const pxTCB = ( TCB_t * ) pxMutexHolder;
+        TCB_t * const pxTCB = pxMutexHolder;
         UBaseType_t uxPriorityUsedOnEntry, uxPriorityToUse;
         const UBaseType_t uxOnlyOneMutexHeld = ( UBaseType_t ) 1;
 
@@ -4655,7 +4657,7 @@ TickType_t uxTaskResetEventItemValue( void )
             ( pxCurrentTCB->uxMutexesHeld )++;
         }
 
-        return ( TaskHandle_t ) pxCurrentTCB;
+        return pxCurrentTCB;
     }
 
 #endif /* configUSE_MUTEXES */
@@ -4833,7 +4835,7 @@ TickType_t uxTaskResetEventItemValue( void )
 
         configASSERT( uxIndexToNotify < configTASK_NOTIFICATION_ARRAY_ENTRIES );
         configASSERT( xTaskToNotify );
-        pxTCB = ( TCB_t * ) xTaskToNotify;
+        pxTCB = xTaskToNotify;
 
         taskENTER_CRITICAL();
         {
@@ -4977,7 +4979,7 @@ TickType_t uxTaskResetEventItemValue( void )
          * https://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html */
         portASSERT_IF_INTERRUPT_PRIORITY_INVALID();
 
-        pxTCB = ( TCB_t * ) xTaskToNotify;
+        pxTCB = xTaskToNotify;
 
         uxSavedInterruptStatus = portSET_INTERRUPT_MASK_FROM_ISR();
         {
@@ -5112,7 +5114,7 @@ TickType_t uxTaskResetEventItemValue( void )
          * https://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html */
         portASSERT_IF_INTERRUPT_PRIORITY_INVALID();
 
-        pxTCB = ( TCB_t * ) xTaskToNotify;
+        pxTCB = xTaskToNotify;
 
         uxSavedInterruptStatus = portSET_INTERRUPT_MASK_FROM_ISR();
         {
@@ -5234,7 +5236,7 @@ TickType_t uxTaskResetEventItemValue( void )
 
 #if ( ( configGENERATE_RUN_TIME_STATS == 1 ) && ( INCLUDE_xTaskGetIdleTaskHandle == 1 ) )
 
-    TickType_t ulTaskGetIdleRunTimeCounter( void )
+    uint32_t ulTaskGetIdleRunTimeCounter( void )
     {
         return xIdleTaskHandle->ulRunTimeCounter;
     }

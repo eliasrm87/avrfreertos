@@ -15,6 +15,4 @@ You may need to edit the Makefile to fit your system configuration regarding the
 
 # Making your own project
 
-Just copy the Blink demo, edit the code, add any extra file you may need and edit the Makefile to include your extra files.
-
-The Makefile also includes some extra libraries you may like comment out and play with them.
+Just edit **main.c**, add any extra file you may need and edit the Makefile to include your extra files.

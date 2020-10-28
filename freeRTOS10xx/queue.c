@@ -95,7 +95,7 @@ typedef struct SemaphoreData
  * Items are queued by copy, not reference.  See the following link for the
  * rationale: https://www.FreeRTOS.org/Embedded-RTOS-Queues.html
  */
-typedef struct QueueDef_t
+typedef struct QueueDefinition /* The old naming convention is used to prevent breaking kernel aware debuggers. */
 {
     int8_t * pcHead;           /*< Points to the beginning of the queue storage area. */
     int8_t * pcWriteTo;        /*< Points to the free next place in the storage area. */
@@ -121,14 +121,18 @@ typedef struct QueueDef_t
     #endif
 
     #if ( configUSE_QUEUE_SETS == 1 )
-        struct QueueDef_t *pxQueueSetContainer;
+        struct QueueDefinition * pxQueueSetContainer;
     #endif
 
     #if ( configUSE_TRACE_FACILITY == 1 )
         UBaseType_t uxQueueNumber;
         uint8_t ucQueueType;
     #endif
-} Queue_t;
+} xQUEUE;
+
+/* The old xQUEUE name is maintained above then typedefed to the new Queue_t
+ * name below to enable the use of older kernel aware debuggers. */
+typedef xQUEUE Queue_t;
 
 /*-----------------------------------------------------------*/
 
