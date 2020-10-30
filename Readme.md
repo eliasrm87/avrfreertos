@@ -4,7 +4,7 @@ This is a convenience starting point to allow quick and easy use of FreeRTOS on 
 
 # Building
 
-To build the demos, just **cd** into the demo folder and run **make**.
+To build the project run **make**.
 
 # Programming the Arduino
 
@@ -13,4 +13,4 @@ You may need to edit the Makefile to fit your system configuration regarding the
 
 # Making your own project
 
-Just edit **main.c**, add any extra file you may need and edit the Makefile to include your extra files.
+Edit **main.c**, add any extra file you may need and edit the Makefile to include your extra files.
